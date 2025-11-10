@@ -1,6 +1,9 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { FaArrowLeft } from 'react-icons/fa';
 
 const Calculator = () => {
+  const navigate = useNavigate();
   const [display, setDisplay] = useState('');
   const [openParen, setOpenParen] = useState(false);
 
@@ -63,7 +66,16 @@ const Calculator = () => {
   }, [display]);
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-[#0F172A] to-[#1E3A8A]/40 relative py-20 px-4">
+      {/* Back Button */}
+      <button
+        onClick={() => navigate("/")}
+        className="absolute top-6 left-4 sm:left-6 flex items-center gap-2 px-4 py-2 bg-blue-600/80 hover:bg-blue-600 rounded-full text-white font-semibold transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-blue-500/50 z-10"
+      >
+        <FaArrowLeft className="text-sm" />
+        <span className="hidden sm:inline">Back</span>
+      </button>
+
       <div 
         className="w-[340px] bg-[#334663] text-[#f5f5dc] p-[18px] rounded-[14px] shadow-[0_10px_30px_rgba(0,0,0,0.15)]"
         aria-label="Calculator"

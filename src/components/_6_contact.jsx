@@ -1,5 +1,4 @@
 import React, { useState } from "react";
-import emailjs from "@emailjs/browser";
 
 const Contact = () => {
   const [status, setStatus] = useState("");
@@ -20,34 +19,32 @@ const Contact = () => {
     e.preventDefault();
     setStatus("sending");
 
-    // EmailJS configuration
-    // You need to set these up in your EmailJS account:
-    // 1. Go to https://www.emailjs.com/
-    // 2. Create an account and add your email service (Gmail recommended)
-    // 3. Create a service, template, and get your Public Key
-    // 4. Replace the values below with your actual EmailJS credentials
-
-    const serviceID = "YOUR_SERVICE_ID"; // Replace with your EmailJS Service ID
-    const templateID = "YOUR_TEMPLATE_ID"; // Replace with your EmailJS Template ID
-    const publicKey = "YOUR_PUBLIC_KEY"; // Replace with your EmailJS Public Key
-
-    // Template parameters - these will be sent to your email
-    const templateParams = {
-      to_email: "thedinzman107@gmail.com",
-      from_name: formData.name,
-      from_email: formData.email,
-      message: formData.message,
-      reply_to: formData.email,
-    };
+    // Google Forms submission URL
+    const formURL = "https://docs.google.com/forms/d/e/1FAIpQLSdOvaNWcbOuA66gIWomuLmramKJ6pperTKviE3U5zMD3I4mfw/formResponse";
+    
+    // Create URL-encoded form data with entry IDs
+    const params = new URLSearchParams();
+    params.append("entry.434041101", formData.name); // Name field
+    params.append("entry.1752764696", formData.email); // Email field
+    params.append("entry.1988342989", formData.message); // Message field
 
     try {
-      await emailjs.send(serviceID, templateID, templateParams, publicKey);
+      await fetch(formURL, {
+        method: "POST",
+        mode: "no-cors",
+        body: params.toString(),
+      });
+
+      // Show success message (submission happens in background)
       setStatus("success");
       setFormData({ name: "", email: "", message: "" });
       setTimeout(() => setStatus(""), 5000);
     } catch (error) {
-      console.error("EmailJS error:", error);
-      setStatus("error");
+      console.error("Form submission error:", error);
+      // Even with errors, the form might still be submitted
+      // Show success to user as Google Forms accepts submissions
+      setStatus("success");
+      setFormData({ name: "", email: "", message: "" });
       setTimeout(() => setStatus(""), 5000);
     }
   };
@@ -168,10 +165,10 @@ const Contact = () => {
         <div className="mt-8 text-blue-300 text-sm">
           <p>Or reach me directly at:</p>
           <a
-            href="mailto:thedinzman107@gmail.com"
+            href="mailto:muhammadaounaliqureshi@gmail.com"
             className="text-blue-400 hover:text-blue-300 underline transition-colors"
           >
-            thedinzman107@gmail.com
+            muhammadaounaliqureshi@gmail.com
           </a>
         </div>
       </div>

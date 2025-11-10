@@ -33,7 +33,7 @@ const Footer = () => {
               <FaGithub />
             </a>
             <a
-              href="https://discord.com/"
+              href="https://discord.com/channels/@me"
               target="_blank"
               rel="noopener noreferrer"
               className="hover:text-blue-400 transition-transform hover:scale-110"
@@ -41,7 +41,7 @@ const Footer = () => {
               <FaDiscord />
             </a>
             <a
-              href="https://x.com/"
+              href="https://x.com/Dinz_Man?t=duC6ioEDH91ThFOADJlOnw&s=09"
               target="_blank"
               rel="noopener noreferrer"
               className="hover:text-blue-400 transition-transform hover:scale-110"
@@ -92,10 +92,10 @@ const Footer = () => {
             <li>
               <strong>Email:</strong>{" "}
               <a
-                href="mailto:thedinzman107@gmail.com"
+                href="mailto:muhammadaounaliqureshi@gmail.com"
                 className="hover:text-blue-400 transition-colors duration-300 break-all"
               >
-               thedinzman107@gmail.com
+               muhammadaounaliqureshi@gmail.com
               </a>
             </li>
             <li>
