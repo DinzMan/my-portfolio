@@ -1,223 +1,188 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { FaArrowLeft } from 'react-icons/fa';
+import React, { useState, useEffect, useCallback } from "react";
 
 const Calculator = () => {
-  const navigate = useNavigate();
-  const [display, setDisplay] = useState('');
-  const [openParen, setOpenParen] = useState(false);
+  const [display, setDisplay] = useState("0");
+  const [previousValue, setPreviousValue] = useState(null);
+  const [operation, setOperation] = useState(null);
+  const [waitingForOperand, setWaitingForOperand] = useState(false);
 
-  const appendToDisplay = (text) => {
-    setDisplay(prev => prev + text);
+  const inputDigit = (digit) => {
+    if (waitingForOperand) {
+      setDisplay(String(digit));
+      setWaitingForOperand(false);
+    } else {
+      setDisplay(display === "0" ? String(digit) : display + digit);
+    }
   };
 
-  const clearDisplay = () => {
-    setDisplay('');
+  const inputDecimal = () => {
+    if (waitingForOperand) {
+      setDisplay("0.");
+      setWaitingForOperand(false);
+    } else if (display.indexOf(".") === -1) {
+      setDisplay(display + ".");
+    }
   };
 
-  const deleteLastChar = () => {
-    setDisplay(prev => prev.slice(0, -1));
+  const clear = () => {
+    setDisplay("0");
+    setPreviousValue(null);
+    setOperation(null);
+    setWaitingForOperand(false);
   };
 
-  const toggleParentheses = () => {
-    setDisplay(prev => prev + (openParen ? ')' : '('));
-    setOpenParen(prev => !prev);
-  };
+  const performOperation = (nextOperation) => {
+    const inputValue = parseFloat(display);
 
-  const evaluate = () => {
-    const expr = display
-      .replace(/÷/g, '/')
-      .replace(/×/g, '*')
-      .replace(/−/g, '-');
+    if (previousValue === null) {
+      setPreviousValue(inputValue);
+    } else if (operation) {
+      const currentValue = previousValue || 0;
+      let newValue = currentValue;
 
-    try {
-      // Validation: allow only digits, operators, parentheses, dot and spaces
-      if (!/^[0-9+\-*/().\s]+$/.test(expr)) {
-        throw new Error('Invalid characters');
+      // Safe evaluation without using Function constructor
+      switch (operation) {
+        case "+":
+          newValue = currentValue + inputValue;
+          break;
+        case "-":
+          newValue = currentValue - inputValue;
+          break;
+        case "*":
+          newValue = currentValue * inputValue;
+          break;
+        case "/":
+          newValue = currentValue / inputValue;
+          break;
+        default:
+          newValue = inputValue;
       }
-      // Using Function constructor as a safer alternative to eval
-      const result = Function('"use strict"; return (' + expr + ')')();
-      setDisplay(String(result));
-    } catch (err) {
-      setDisplay('Error');
-      setTimeout(() => setDisplay(''), 1000);
+
+      setDisplay(String(newValue));
+      setPreviousValue(newValue);
     }
+
+    setWaitingForOperand(true);
+    setOperation(nextOperation);
   };
 
-  const handleKeyDown = (e) => {
-    const allowed = '0123456789+-*/().';
-    if (allowed.includes(e.key)) {
-      appendToDisplay(e.key);
-      e.preventDefault();
-    } else if (e.key === 'Enter' || e.key === '=') {
-      evaluate();
-      e.preventDefault();
-    } else if (e.key === 'Backspace') {
-      deleteLastChar();
-      e.preventDefault();
-    } else if (e.key.toLowerCase() === 'c') {
-      clearDisplay();
-    }
-  };
+  const handleKeyDown = useCallback((event) => {
+    const key = event.key;
 
-  React.useEffect(() => {
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
-  }, [display]);
+    if (key >= "0" && key <= "9") {
+      inputDigit(parseInt(key));
+    } else if (key === ".") {
+      inputDecimal();
+    } else if (key === "+" || key === "-" || key === "*" || key === "/") {
+      performOperation(key);
+    } else if (key === "Enter" || key === "=") {
+      performOperation("=");
+    } else if (key === "Escape" || key === "c" || key === "C") {
+      clear();
+    }
+  }, [display, previousValue, operation, waitingForOperand]); // Added all dependencies
+
+  useEffect(() => {
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, [handleKeyDown]); // Now includes handleKeyDown
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-[#0F172A] to-[#1E3A8A]/40 relative py-20 px-4">
-      {/* Back Button */}
-      <button
-        onClick={() => navigate("/")}
-        className="absolute top-6 left-4 sm:left-6 flex items-center gap-2 px-4 py-2 bg-blue-600/80 hover:bg-blue-600 rounded-full text-white font-semibold transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-blue-500/50 z-10"
-      >
-        <FaArrowLeft className="text-sm" />
-        <span className="hidden sm:inline">Back</span>
-      </button>
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-violet-900 flex items-center justify-center p-4">
+      <div className="bg-gray-800 rounded-3xl shadow-2xl p-6 w-full max-w-md">
+        <div className="bg-gray-900 rounded-2xl p-6 mb-6 text-right">
+          <div className="text-gray-400 text-sm mb-1 h-6">
+            {previousValue !== null && operation ? `${previousValue} ${operation}` : ""}
+          </div>
+          <div className="text-white text-5xl font-light overflow-hidden">
+            {display}
+          </div>
+        </div>
 
-      <div 
-        className="w-[340px] bg-[#334663] text-[#f5f5dc] p-[18px] rounded-[14px] shadow-[0_10px_30px_rgba(0,0,0,0.15)]"
-        aria-label="Calculator"
-      >
-        <input
-          className="w-full px-[14px] py-3 text-2xl rounded-lg border-none mb-3 text-right bg-[#f5f5dc] text-[#334663] outline-none"
-          type="text"
-          inputMode="decimal"
-          autoComplete="off"
-          readOnly
-          value={display}
-          aria-label="Display"
-        />
-        
-        <div className="grid grid-cols-4 gap-2">
-          {/* Row 1 */}
+        <div className="grid grid-cols-4 gap-3">
           <button
-            className="text-lg px-3 py-3 rounded-lg border-none cursor-pointer bg-[#c74b4b] text-[#f5f5dc] transition-all duration-75 ease-in-out active:translate-y-[1px] hover:opacity-90"
-            onClick={clearDisplay}
+            onClick={clear}
+            className="col-span-2 bg-red-500 hover:bg-red-600 text-white rounded-xl p-4 text-xl font-semibold transition-all"
           >
             AC
           </button>
           <button
-            className="text-lg px-3 py-3 rounded-lg border-none cursor-pointer bg-white/[0.06] text-[#f5f5dc] transition-all duration-75 ease-in-out active:translate-y-[1px] hover:opacity-90"
-            onClick={deleteLastChar}
-          >
-            Del
-          </button>
-          <button
-            className="text-lg px-3 py-3 rounded-lg border-none cursor-pointer bg-white/[0.06] text-[#f5f5dc] transition-all duration-75 ease-in-out active:translate-y-[1px] hover:opacity-90"
-            onClick={toggleParentheses}
-          >
-            ()
-          </button>
-          <button
-            className="text-lg px-3 py-3 rounded-lg border-none cursor-pointer bg-white/[0.12] text-[#f5f5dc] transition-all duration-75 ease-in-out active:translate-y-[1px] hover:opacity-90"
-            onClick={() => appendToDisplay('/')}
+            onClick={() => performOperation("/")}
+            className="bg-orange-500 hover:bg-orange-600 text-white rounded-xl p-4 text-xl font-semibold transition-all"
           >
             ÷
           </button>
-
-          {/* Row 2 */}
           <button
-            className="text-lg px-3 py-3 rounded-lg border-none cursor-pointer bg-white/[0.06] text-[#f5f5dc] transition-all duration-75 ease-in-out active:translate-y-[1px] hover:opacity-90"
-            onClick={() => appendToDisplay('7')}
-          >
-            7
-          </button>
-          <button
-            className="text-lg px-3 py-3 rounded-lg border-none cursor-pointer bg-white/[0.06] text-[#f5f5dc] transition-all duration-75 ease-in-out active:translate-y-[1px] hover:opacity-90"
-            onClick={() => appendToDisplay('8')}
-          >
-            8
-          </button>
-          <button
-            className="text-lg px-3 py-3 rounded-lg border-none cursor-pointer bg-white/[0.06] text-[#f5f5dc] transition-all duration-75 ease-in-out active:translate-y-[1px] hover:opacity-90"
-            onClick={() => appendToDisplay('9')}
-          >
-            9
-          </button>
-          <button
-            className="text-lg px-3 py-3 rounded-lg border-none cursor-pointer bg-white/[0.12] text-[#f5f5dc] transition-all duration-75 ease-in-out active:translate-y-[1px] hover:opacity-90"
-            onClick={() => appendToDisplay('*')}
+            onClick={() => performOperation("*")}
+            className="bg-orange-500 hover:bg-orange-600 text-white rounded-xl p-4 text-xl font-semibold transition-all"
           >
             ×
           </button>
 
-          {/* Row 3 */}
+          {[7, 8, 9].map((num) => (
+            <button
+              key={num}
+              onClick={() => inputDigit(num)}
+              className="bg-gray-700 hover:bg-gray-600 text-white rounded-xl p-4 text-xl font-semibold transition-all"
+            >
+              {num}
+            </button>
+          ))}
           <button
-            className="text-lg px-3 py-3 rounded-lg border-none cursor-pointer bg-white/[0.06] text-[#f5f5dc] transition-all duration-75 ease-in-out active:translate-y-[1px] hover:opacity-90"
-            onClick={() => appendToDisplay('4')}
-          >
-            4
-          </button>
-          <button
-            className="text-lg px-3 py-3 rounded-lg border-none cursor-pointer bg-white/[0.06] text-[#f5f5dc] transition-all duration-75 ease-in-out active:translate-y-[1px] hover:opacity-90"
-            onClick={() => appendToDisplay('5')}
-          >
-            5
-          </button>
-          <button
-            className="text-lg px-3 py-3 rounded-lg border-none cursor-pointer bg-white/[0.06] text-[#f5f5dc] transition-all duration-75 ease-in-out active:translate-y-[1px] hover:opacity-90"
-            onClick={() => appendToDisplay('6')}
-          >
-            6
-          </button>
-          <button
-            className="text-lg px-3 py-3 rounded-lg border-none cursor-pointer bg-white/[0.12] text-[#f5f5dc] transition-all duration-75 ease-in-out active:translate-y-[1px] hover:opacity-90"
-            onClick={() => appendToDisplay('+')}
-          >
-            +
-          </button>
-
-          {/* Row 4 */}
-          <button
-            className="text-lg px-3 py-3 rounded-lg border-none cursor-pointer bg-white/[0.06] text-[#f5f5dc] transition-all duration-75 ease-in-out active:translate-y-[1px] hover:opacity-90"
-            onClick={() => appendToDisplay('1')}
-          >
-            1
-          </button>
-          <button
-            className="text-lg px-3 py-3 rounded-lg border-none cursor-pointer bg-white/[0.06] text-[#f5f5dc] transition-all duration-75 ease-in-out active:translate-y-[1px] hover:opacity-90"
-            onClick={() => appendToDisplay('2')}
-          >
-            2
-          </button>
-          <button
-            className="text-lg px-3 py-3 rounded-lg border-none cursor-pointer bg-white/[0.06] text-[#f5f5dc] transition-all duration-75 ease-in-out active:translate-y-[1px] hover:opacity-90"
-            onClick={() => appendToDisplay('3')}
-          >
-            3
-          </button>
-          <button
-            className="text-lg px-3 py-3 rounded-lg border-none cursor-pointer bg-white/[0.12] text-[#f5f5dc] transition-all duration-75 ease-in-out active:translate-y-[1px] hover:opacity-90"
-            onClick={() => appendToDisplay('-')}
+            onClick={() => performOperation("-")}
+            className="bg-orange-500 hover:bg-orange-600 text-white rounded-xl p-4 text-xl font-semibold transition-all"
           >
             −
           </button>
 
-          {/* Row 5 */}
+          {[4, 5, 6].map((num) => (
+            <button
+              key={num}
+              onClick={() => inputDigit(num)}
+              className="bg-gray-700 hover:bg-gray-600 text-white rounded-xl p-4 text-xl font-semibold transition-all"
+            >
+              {num}
+            </button>
+          ))}
           <button
-            className="text-lg px-3 py-3 rounded-lg border-none cursor-pointer bg-white/[0.06] text-[#f5f5dc] transition-all duration-75 ease-in-out active:translate-y-[1px] hover:opacity-90"
-            onClick={() => appendToDisplay('.')}
+            onClick={() => performOperation("+")}
+            className="bg-orange-500 hover:bg-orange-600 text-white rounded-xl p-4 text-xl font-semibold transition-all"
           >
-            .
+            +
           </button>
+
+          {[1, 2, 3].map((num) => (
+            <button
+              key={num}
+              onClick={() => inputDigit(num)}
+              className="bg-gray-700 hover:bg-gray-600 text-white rounded-xl p-4 text-xl font-semibold transition-all"
+            >
+              {num}
+            </button>
+          ))}
           <button
-            className="text-lg px-3 py-3 rounded-lg border-none cursor-pointer bg-white/[0.06] text-[#f5f5dc] transition-all duration-75 ease-in-out active:translate-y-[1px] hover:opacity-90"
-            onClick={() => appendToDisplay('0')}
+            onClick={() => performOperation("=")}
+            className="row-span-2 bg-green-500 hover:bg-green-600 text-white rounded-xl p-4 text-xl font-semibold transition-all"
+          >
+            =
+          </button>
+
+          <button
+            onClick={() => inputDigit(0)}
+            className="col-span-2 bg-gray-700 hover:bg-gray-600 text-white rounded-xl p-4 text-xl font-semibold transition-all"
           >
             0
           </button>
           <button
-            className="col-span-2 text-lg px-3 py-3 rounded-lg border-none cursor-pointer bg-[#f5f5dc] text-[#334663] font-semibold transition-all duration-75 ease-in-out active:translate-y-[1px] hover:opacity-90"
-            onClick={evaluate}
+            onClick={inputDecimal}
+            className="bg-gray-700 hover:bg-gray-600 text-white rounded-xl p-4 text-xl font-semibold transition-all"
           >
-            =
+            .
           </button>
         </div>
       </div>
     </div>
   );
-}
+};
 
 export default Calculator;
