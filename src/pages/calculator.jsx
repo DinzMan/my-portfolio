@@ -7,36 +7,22 @@ const Calculator = () => {
   const [waitingForOperand, setWaitingForOperand] = useState(false);
 
   const inputDigit = useCallback((digit) => {
-    setDisplay(prev => {
-      setWaitingForOperand(waiting => {
-        if (waiting) {
-          setWaitingForOperand(false);
-          return String(digit);
-        }
-        return prev === "0" ? String(digit) : prev + digit;
-      });
-      return prev;
-    });
-    setWaitingForOperand(waiting => {
-      if (waiting) {
-        setDisplay(String(digit));
-        return false;
-      }
-      setDisplay(prev => prev === "0" ? String(digit) : prev + digit);
-      return waiting;
-    });
-  }, []);
+    if (waitingForOperand) {
+      setDisplay(String(digit));
+      setWaitingForOperand(false);
+    } else {
+      setDisplay(display === "0" ? String(digit) : display + digit);
+    }
+  }, [display, waitingForOperand]);
 
   const inputDecimal = useCallback(() => {
-    setWaitingForOperand(waiting => {
-      if (waiting) {
-        setDisplay("0.");
-        return false;
-      }
-      setDisplay(prev => prev.indexOf(".") === -1 ? prev + "." : prev);
-      return waiting;
-    });
-  }, []);
+    if (waitingForOperand) {
+      setDisplay("0.");
+      setWaitingForOperand(false);
+    } else if (display.indexOf(".") === -1) {
+      setDisplay(display + ".");
+    }
+  }, [display, waitingForOperand]);
 
   const clear = useCallback(() => {
     setDisplay("0");
@@ -46,47 +32,38 @@ const Calculator = () => {
   }, []);
 
   const performOperation = useCallback((nextOperation) => {
-    setDisplay(currentDisplay => {
-      const inputValue = parseFloat(currentDisplay);
-      
-      setPreviousValue(prev => {
-        setOperation(currentOp => {
-          if (prev === null) {
-            setPreviousValue(inputValue);
-          } else if (currentOp) {
-            const currentValue = prev || 0;
-            let newValue = currentValue;
+    const inputValue = parseFloat(display);
 
-            switch (currentOp) {
-              case "+":
-                newValue = currentValue + inputValue;
-                break;
-              case "-":
-                newValue = currentValue - inputValue;
-                break;
-              case "*":
-                newValue = currentValue * inputValue;
-                break;
-              case "/":
-                newValue = currentValue / inputValue;
-                break;
-              default:
-                newValue = inputValue;
-            }
+    if (previousValue === null) {
+      setPreviousValue(inputValue);
+    } else if (operation) {
+      const currentValue = previousValue || 0;
+      let newValue = currentValue;
 
-            setDisplay(String(newValue));
-            setPreviousValue(newValue);
-          }
-          
-          setWaitingForOperand(true);
-          return nextOperation;
-        });
-        return prev;
-      });
-      
-      return currentDisplay;
-    });
-  }, []);
+      switch (operation) {
+        case "+":
+          newValue = currentValue + inputValue;
+          break;
+        case "-":
+          newValue = currentValue - inputValue;
+          break;
+        case "*":
+          newValue = currentValue * inputValue;
+          break;
+        case "/":
+          newValue = currentValue / inputValue;
+          break;
+        default:
+          newValue = inputValue;
+      }
+
+      setDisplay(String(newValue));
+      setPreviousValue(newValue);
+    }
+
+    setWaitingForOperand(true);
+    setOperation(nextOperation);
+  }, [display, previousValue, operation]);
 
   const handleKeyDown = useCallback((event) => {
     const key = event.key;
