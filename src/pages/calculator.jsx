@@ -1,19 +1,26 @@
 import React, { useState, useEffect, useCallback } from "react";
+import { useNavigate } from "react-router-dom";
+import { FaArrowLeft } from "react-icons/fa";
+
 
 const Calculator = () => {
   const [display, setDisplay] = useState("0");
   const [previousValue, setPreviousValue] = useState(null);
   const [operation, setOperation] = useState(null);
   const [waitingForOperand, setWaitingForOperand] = useState(false);
+  const navigate = useNavigate();
 
-  const inputDigit = useCallback((digit) => {
-    if (waitingForOperand) {
-      setDisplay(String(digit));
-      setWaitingForOperand(false);
-    } else {
-      setDisplay(display === "0" ? String(digit) : display + digit);
-    }
-  }, [display, waitingForOperand]);
+  const inputDigit = useCallback(
+    (digit) => {
+      if (waitingForOperand) {
+        setDisplay(String(digit));
+        setWaitingForOperand(false);
+      } else {
+        setDisplay(display === "0" ? String(digit) : display + digit);
+      }
+    },
+    [display, waitingForOperand]
+  );
 
   const inputDecimal = useCallback(() => {
     if (waitingForOperand) {
@@ -31,55 +38,61 @@ const Calculator = () => {
     setWaitingForOperand(false);
   }, []);
 
-  const performOperation = useCallback((nextOperation) => {
-    const inputValue = parseFloat(display);
+  const performOperation = useCallback(
+    (nextOperation) => {
+      const inputValue = parseFloat(display);
 
-    if (previousValue === null) {
-      setPreviousValue(inputValue);
-    } else if (operation) {
-      const currentValue = previousValue || 0;
-      let newValue = currentValue;
+      if (previousValue === null) {
+        setPreviousValue(inputValue);
+      } else if (operation) {
+        const currentValue = previousValue || 0;
+        let newValue = currentValue;
 
-      switch (operation) {
-        case "+":
-          newValue = currentValue + inputValue;
-          break;
-        case "-":
-          newValue = currentValue - inputValue;
-          break;
-        case "*":
-          newValue = currentValue * inputValue;
-          break;
-        case "/":
-          newValue = currentValue / inputValue;
-          break;
-        default:
-          newValue = inputValue;
+        switch (operation) {
+          case "+":
+            newValue = currentValue + inputValue;
+            break;
+          case "-":
+            newValue = currentValue - inputValue;
+            break;
+          case "*":
+            newValue = currentValue * inputValue;
+            break;
+          case "/":
+            newValue = currentValue / inputValue;
+            break;
+          default:
+            newValue = inputValue;
+        }
+
+        setDisplay(String(newValue));
+        setPreviousValue(newValue);
       }
 
-      setDisplay(String(newValue));
-      setPreviousValue(newValue);
-    }
+      setWaitingForOperand(true);
+      setOperation(nextOperation);
+    },
+    [display, previousValue, operation]
+  );
 
-    setWaitingForOperand(true);
-    setOperation(nextOperation);
-  }, [display, previousValue, operation]);
+  const handleKeyDown = useCallback(
+    (event) => {
+      const key = event.key;
 
-  const handleKeyDown = useCallback((event) => {
-    const key = event.key;
-
-    if (key >= "0" && key <= "9") {
-      inputDigit(parseInt(key));
-    } else if (key === ".") {
-      inputDecimal();
-    } else if (key === "+" || key === "-" || key === "*" || key === "/") {
-      performOperation(key);
-    } else if (key === "Enter" || key === "=") {
-      performOperation("=");
-    } else if (key === "Escape" || key === "c" || key === "C") {
-      clear();
-    }
-  }, [inputDigit, inputDecimal, performOperation, clear]);
+      if (key >= "0" && key <= "9") {
+        inputDigit(parseInt(key));
+      } else if (key === ".") {
+        inputDecimal();
+      } else if (key === "+" || key === "-" || key === "*" || key === "/") {
+        performOperation(key);
+      } else if (key === "Enter" || key === "=") {
+        performOperation("=");
+      } else if (key === "Escape" || key === "c" || key === "C") {
+        clear();
+      }
+    },
+    [inputDigit, inputDecimal, performOperation, clear]
+  );
 
   useEffect(() => {
     window.addEventListener("keydown", handleKeyDown);
@@ -87,11 +100,22 @@ const Calculator = () => {
   }, [handleKeyDown]);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-violet-900 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-b from-[#0F172A] to-[#1E3A8A]/40 flex items-center justify-center p-4">
+      {/* Back Button */}
+      <button
+        onClick={() => navigate("/")}
+        className="absolute top-6 left-4 sm:left-6 flex items-center gap-2 px-4 py-2 bg-blue-600/80 hover:bg-blue-600 rounded-full text-white font-semibold transition-all duration-300 transform hover:scale-105 shadow-lg hover:shadow-blue-500/50 z-10"
+      >
+        <FaArrowLeft className="text-sm" />
+        <span className="hidden sm:inline">Back</span>
+      </button>
+
       <div className="bg-gray-800 rounded-3xl shadow-2xl p-6 w-full max-w-md">
         <div className="bg-gray-900 rounded-2xl p-6 mb-6 text-right">
           <div className="text-gray-400 text-sm mb-1 h-6">
-            {previousValue !== null && operation ? `${previousValue} ${operation}` : ""}
+            {previousValue !== null && operation
+              ? `${previousValue} ${operation}`
+              : ""}
           </div>
           <div className="text-white text-5xl font-light overflow-hidden">
             {display}
