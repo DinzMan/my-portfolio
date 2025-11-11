@@ -6,65 +6,87 @@ const Calculator = () => {
   const [operation, setOperation] = useState(null);
   const [waitingForOperand, setWaitingForOperand] = useState(false);
 
-  const inputDigit = (digit) => {
-    if (waitingForOperand) {
-      setDisplay(String(digit));
-      setWaitingForOperand(false);
-    } else {
-      setDisplay(display === "0" ? String(digit) : display + digit);
-    }
-  };
+  const inputDigit = useCallback((digit) => {
+    setDisplay(prev => {
+      setWaitingForOperand(waiting => {
+        if (waiting) {
+          setWaitingForOperand(false);
+          return String(digit);
+        }
+        return prev === "0" ? String(digit) : prev + digit;
+      });
+      return prev;
+    });
+    setWaitingForOperand(waiting => {
+      if (waiting) {
+        setDisplay(String(digit));
+        return false;
+      }
+      setDisplay(prev => prev === "0" ? String(digit) : prev + digit);
+      return waiting;
+    });
+  }, []);
 
-  const inputDecimal = () => {
-    if (waitingForOperand) {
-      setDisplay("0.");
-      setWaitingForOperand(false);
-    } else if (display.indexOf(".") === -1) {
-      setDisplay(display + ".");
-    }
-  };
+  const inputDecimal = useCallback(() => {
+    setWaitingForOperand(waiting => {
+      if (waiting) {
+        setDisplay("0.");
+        return false;
+      }
+      setDisplay(prev => prev.indexOf(".") === -1 ? prev + "." : prev);
+      return waiting;
+    });
+  }, []);
 
-  const clear = () => {
+  const clear = useCallback(() => {
     setDisplay("0");
     setPreviousValue(null);
     setOperation(null);
     setWaitingForOperand(false);
-  };
+  }, []);
 
-  const performOperation = (nextOperation) => {
-    const inputValue = parseFloat(display);
+  const performOperation = useCallback((nextOperation) => {
+    setDisplay(currentDisplay => {
+      const inputValue = parseFloat(currentDisplay);
+      
+      setPreviousValue(prev => {
+        setOperation(currentOp => {
+          if (prev === null) {
+            setPreviousValue(inputValue);
+          } else if (currentOp) {
+            const currentValue = prev || 0;
+            let newValue = currentValue;
 
-    if (previousValue === null) {
-      setPreviousValue(inputValue);
-    } else if (operation) {
-      const currentValue = previousValue || 0;
-      let newValue = currentValue;
+            switch (currentOp) {
+              case "+":
+                newValue = currentValue + inputValue;
+                break;
+              case "-":
+                newValue = currentValue - inputValue;
+                break;
+              case "*":
+                newValue = currentValue * inputValue;
+                break;
+              case "/":
+                newValue = currentValue / inputValue;
+                break;
+              default:
+                newValue = inputValue;
+            }
 
-      // Safe evaluation without using Function constructor
-      switch (operation) {
-        case "+":
-          newValue = currentValue + inputValue;
-          break;
-        case "-":
-          newValue = currentValue - inputValue;
-          break;
-        case "*":
-          newValue = currentValue * inputValue;
-          break;
-        case "/":
-          newValue = currentValue / inputValue;
-          break;
-        default:
-          newValue = inputValue;
-      }
-
-      setDisplay(String(newValue));
-      setPreviousValue(newValue);
-    }
-
-    setWaitingForOperand(true);
-    setOperation(nextOperation);
-  };
+            setDisplay(String(newValue));
+            setPreviousValue(newValue);
+          }
+          
+          setWaitingForOperand(true);
+          return nextOperation;
+        });
+        return prev;
+      });
+      
+      return currentDisplay;
+    });
+  }, []);
 
   const handleKeyDown = useCallback((event) => {
     const key = event.key;
@@ -80,12 +102,12 @@ const Calculator = () => {
     } else if (key === "Escape" || key === "c" || key === "C") {
       clear();
     }
-  }, [display, previousValue, operation, waitingForOperand]); // Added all dependencies
+  }, [inputDigit, inputDecimal, performOperation, clear]);
 
   useEffect(() => {
     window.addEventListener("keydown", handleKeyDown);
     return () => window.removeEventListener("keydown", handleKeyDown);
-  }, [handleKeyDown]); // Now includes handleKeyDown
+  }, [handleKeyDown]);
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-violet-900 flex items-center justify-center p-4">
